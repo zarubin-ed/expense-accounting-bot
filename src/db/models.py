@@ -6,24 +6,20 @@ class BaseModel(Model):
   class Meta:
     database = proxy
 
-class user_ids(BaseModel):
-  user_id = IntegerField(unique=True)
-  username = CharField()
+class UserIds(BaseModel):
+  username = CharField(unique=True)
 
-class group_ids(BaseModel):
-  group_id = IntegerField(unique=True)
-  chat_id = CharField()
+class GroupIds(BaseModel):
+  chat_id = CharField(unique=True)
   
-class group_members(BaseModel):
-  member_id = IntegerField(unique=True)
-  group_id = ForeignKeyField(group_ids, backref="members")
-  user_id = ForeignKeyField(user_ids, backref="members")
+class GroupMembers(BaseModel):
+  group_id = ForeignKeyField(GroupIds, backref="members")
+  user_id = ForeignKeyField(GroupIds, backref="members")
 
-class debts(BaseModel):
-  debt_id = IntegerField(unique=True)
-  chat_id = ForeignKeyField(group_ids, backref='debt')
-  debtor_id = ForeignKeyField(group_members, backref='debt')
-  creditor_id = ForeignKeyField(group_members, backref='debt')
+class Debts(BaseModel):
+  debtor_id = ForeignKeyField(GroupMembers, backref='debt')
+  creditor_id = ForeignKeyField(GroupMembers, backref='debt')
+  delta = IntegerField()
 
 
 
