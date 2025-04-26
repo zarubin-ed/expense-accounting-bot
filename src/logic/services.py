@@ -18,12 +18,10 @@ def add_group_members(group_id, user_id):
     """Добавляет нового участника группы"""
     return GroupMember.create(group_id=group_id, user_id=user_id)
 
-def add_depts(debtor_id, creditor_id, delta=0): 
+def add_debts(debtor_id, creditor_id, delta=0): 
     """Добавляет пару людей, """
     if (debtor_id == creditor_id):
         return None
-    # if debtor_id.group_id != creditor_id.group_id:
-    #     raise Exception("Кредитор и должник должны быть в одной группе")
     debt = Debt.create(debtor_id=debtor_id, creditor_id=creditor_id, delta=delta)
     return debt
 
@@ -66,60 +64,38 @@ def get_debts_by_member(member_id: int) -> list[Debt]:
 
 def get_debts_by_pair_of_members(member_id1: int, member_id2: int) -> list[Debt]:
     try:
-        return Debt.get(
+        dept = Debt.get(
             ((Debt.debtor_id == member_id1) & (Debt.creditor_id == member_id2)) |
             ((Debt.debtor_id == member_id2) & (Debt.creditor_id == member_id1))
         )
+        return dept
     except Debt.DoesNotExist:
-        return add_depts(member_id1, member_id2)
-
-def get_group_member_by_id(member_id : int) -> GroupMember:
-    try:
-        return GroupMember.get_by_id(member_id)
-    except Exception:
-        print("Не был найден участник группы")
-        return None
-
-def get_group_by_id(group_id : int) -> Group:
-    return Group.get_by_id(group_id)
-
-def get_user_by_id(user_id : int) -> User:
-    try:
-        return User.get_by_id(user_id)
-    except Exception:
-        print("Не был найден юзер")
-        return None
-    
-
-def get_user_by_member_id(member_id : int) -> User:
-    member = get_group_member_by_id(member_id)
-    if member == None:
-        return None
-    return get_user_by_id(member.user_id)
+        return add_debts(member_id1, member_id2)
 
 def make_dict_from_dept_list(debts : list, member_id : int, inverse : bool) -> dict[str, int]:
     result = dict()
     if inverse:
         for dept in debts:
-            if dept.creditor_id == member_id:
+            if dept.creditor_id.id == member_id:
                 if dept.delta > 0:
-                    result[get_user_by_member_id(dept.debtor_id)] = dept.delta
+                    result[dept.debtor_id.user_id.username] = dept.delta
             else:
                 if dept.delta < 0:
-                    result[get_user_by_member_id(dept.creditor_id)] = -dept.delta
+                    result[dept.creditor_id.user_id.username] = -dept.delta
     else:
         for dept in debts:
-            if dept.debtor_id == member_id:
+            if dept.debtor_id.id == member_id:
                 if dept.delta > 0:
-                    result[get_user_by_member_id(dept.creditor_id)] = dept.delta
+                    result[dept.creditor_id.user_id.username] = dept.delta
             else:
                 if dept.delta < 0:
-                    result[get_user_by_member_id(dept.debtor_id)] = -dept.delta
+                    result[dept.debtor_id.user_id.username] = -dept.delta
     return result
 
 def get_owe_dict_impl(username : str, chat_id : str, inverse : bool) -> dict:
-    member_id = get_group_member_id(username, chat_id)
-    
+    "Либо получение словаря должников, либо словаря того, кому должен"
+    member_id = get_member_id(username, chat_id)
+    print(f"участник группы {member_id}")
     debts = get_debts_by_member(member_id)
     
     return make_dict_from_dept_list(debts, member_id, inverse)
@@ -165,9 +141,9 @@ def register_debt(debtor_username : str, creditor_username : str, chat_id : str,
     :return: ничего не возвращает
     :rtype: void
     """
-    debtor_member_id = get_group_member_id(debtor_username, chat_id)
+    debtor_member_id = get_member_id(debtor_username, chat_id)
    
-    creditor_member_id = get_group_member_id(creditor_username, chat_id)
+    creditor_member_id = get_member_id(creditor_username, chat_id)
 
     debt = get_debts_by_pair_of_members(debtor_member_id, creditor_member_id)
 
@@ -192,7 +168,7 @@ def register_debt_free(debtor_username : str, creditor_username : str, chat_id :
     :return: ничего не возвращает
     :rtype: void
     """
-    register_debt(debtor_username, creditor_username, -value)
+    register_debt(debtor_username, creditor_username, chat_id, -value)
 
 
 

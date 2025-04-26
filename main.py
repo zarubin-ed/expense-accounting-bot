@@ -21,7 +21,12 @@ def main() -> None :
     register_debt(user1, user2, chat1, 100)
 
     print(whom_does_this_user_owe(user1, chat1))
-    # print(whom_does_this_user_owe(user2, chat1))
+    print(whom_does_this_user_owe(user2, chat1))
+
+    register_debt_free(user1, user2, chat1, 100)
+
+    print(whom_does_this_user_owe(user1, chat1))
+    print(whom_does_this_user_owe(user2, chat1))
    
 #PYTHONPATH=src:src/db:src/logic python main.py
 

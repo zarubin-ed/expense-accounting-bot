@@ -14,7 +14,7 @@ class Group(BaseModel):
   
 class GroupMember(BaseModel):
   group_id = ForeignKeyField(Group, backref="members")
-  user_id = ForeignKeyField(Group, backref="members")
+  user_id = ForeignKeyField(User, backref="members")
 
 class Debt(BaseModel):
   debtor_id = ForeignKeyField(GroupMember, backref='debt')
