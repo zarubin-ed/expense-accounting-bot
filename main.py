@@ -1,7 +1,7 @@
-from db.init_db import init_db 
+from db.__init__ import __init__ 
 
 def main() -> None :
-    init_db()
+    __init__()
 
 if __name__ == '__main__':
     main()
