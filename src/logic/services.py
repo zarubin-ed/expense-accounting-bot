@@ -36,14 +36,14 @@ def get_user_id(username : str) -> int:
         user = User.get(User.username == username)
         return user.id
     except User.DoesNotExist:
-        return None
+        return add_user(username).id
     
 def get_group_id(chat_id : str) -> int:
     try:
         group = Group.get(Group.chat_id == chat_id)
         return group.id
     except Group.DoesNotExist:
-        return None
+        return add_group(chat_id).id
     
 def get_group_member_id(group_id : int, user_id : int) -> int:
     "Принимает id группы и id пользователя и возращает его id как участника группы"
@@ -52,17 +52,13 @@ def get_group_member_id(group_id : int, user_id : int) -> int:
                                  (GroupMember.user_id == user_id))
         return member.id
     except GroupMember.DoesNotExist:
-        return None
+        return add_group_members(group_id, user_id).id
     
 def get_member_id(username : str, chat_id : str) -> int:
     "принимает имя пользователя и id чата, возращает id участника группы"
     group_id = get_group_id(chat_id)
-    if group_id == None:
-        return None
     
     user_id = get_user_id(username)
-    if user_id == None:
-        return None
     
     return get_group_member_id(group_id, user_id)
     
@@ -71,6 +67,15 @@ def get_debts_by_member(member_id: int) -> list[Debt]:
         (Debt.debtor_id == member_id) | 
         (Debt.creditor_id == member_id)
     ))
+
+def get_debts_by_pair_of_members(member_id1: int, member_id2: int) -> list[Debt]:
+    try:
+        return Debt.get(
+            ((Debt.debtor_id == member_id1) & (Debt.creditor_id == member_id2)) |
+            ((Debt.debtor_id == member_id2) & (Debt.creditor_id == member_id1))
+        )
+    except Debt.DoesNotExist:
+        return add_depts(member_id1, member_id2)
 
 def get_group_member_by_id(member_id : int) -> GroupMember:
     return GroupMember.get_by_id(member_id)
@@ -106,8 +111,6 @@ def make_dict_from_dept_list(debts : list, member_id : int, inverse : bool) -> d
 
 def get_owe_dict_impl(username : str, chat_id : str, inverse : bool) -> dict:
     member_id = get_group_member_id(username, chat_id)
-    if member_id == None:
-        return None
     
     debts = get_debts_by_member(member_id)
     
@@ -139,7 +142,49 @@ def who_owes_this_user(username : str, chat_id : str):
     """
     return get_owe_dict_impl(username, chat_id, True)
 
+def register_debt(debtor_username : str, creditor_username : str, chat_id : str, value : float):
+    """
+    register_debt 
 
+    :param: debtor_username: имя должника
+    :type param: string
+    :param: creditor_username: имя кредитора
+    :type param: string
+    :param: chat_id: Id чата, в котором состоят эти пользователи
+    :type param: str
+    :param: value: сумма долга
+    :type param: float
+    :return: ничего не возвращает
+    :rtype: void
+    """
+    debtor_member_id = get_group_member_id(debtor_username, chat_id)
+   
+    creditor_member_id = get_group_member_id(creditor_username, chat_id)
+
+    debt = get_debts_by_pair_of_members(debtor_member_id, creditor_member_id)
+
+    if debt.debtor_id != debtor_member_id:
+        value = -value
+    
+    debt.delta += value
+    debt.save()
+
+def register_debt_free(debtor_username : str, creditor_username : str, chat_id : str, value : float):
+    """
+    register_debt_free
+
+    :param: debtor_username: имя должника
+    :type param: string
+    :param: creditor_username: имя кредитора
+    :param: chat_id: Id чата, в котором состоят эти пользователи
+    :type param: str
+    :type param: string
+    :param: value: сумма долга
+    :type param: int
+    :return: ничего не возвращает
+    :rtype: void
+    """
+    register_debt(debtor_username, creditor_username, -value)
 
 
 
