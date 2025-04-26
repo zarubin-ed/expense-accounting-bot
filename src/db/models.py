@@ -1,4 +1,3 @@
-#from db.__init__ import db
 from peewee import Model, IntegerField, CharField, ForeignKeyField, DatabaseProxy
 
 proxy = DatabaseProxy()
@@ -17,14 +16,14 @@ class group_ids(BaseModel):
   
 class group_members(BaseModel):
   member_id = IntegerField(unique=True)
-  chat_id = CharField()
-  user_id = IntegerField()
+  group_id = ForeignKeyField(group_ids, backref="members")
+  user_id = ForeignKeyField(user_ids, backref="members")
 
 class debts(BaseModel):
   debt_id = IntegerField(unique=True)
-  chat_id = CharField()
-  debtor_id = IntegerField()
-  creditor_id = IntegerField()
+  chat_id = ForeignKeyField(group_ids, backref='debt')
+  debtor_id = ForeignKeyField(group_members, backref='debt')
+  creditor_id = ForeignKeyField(group_members, backref='debt')
 
 
 

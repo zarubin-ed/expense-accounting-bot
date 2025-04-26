@@ -1,4 +1,3 @@
-import sqlite3
 import os
 from peewee import SqliteDatabase
 from models import proxy, user_ids, group_ids, group_members, debts
