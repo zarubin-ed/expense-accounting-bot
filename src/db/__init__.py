@@ -1,6 +1,6 @@
 import os
 from peewee import SqliteDatabase
-from models import proxy, user_ids, group_ids, group_members, debts
+from models import proxy, User, Group, GroupMember, Debt
 
 def __init__():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -8,5 +8,5 @@ def __init__():
 
     db = SqliteDatabase(db_path)
     proxy.initialize(db)
-    db.create_tables([user_ids, group_ids, group_members, debts])
+    db.create_tables([User, Group, GroupMember, Debt])
     print('Data base have been initialized!')

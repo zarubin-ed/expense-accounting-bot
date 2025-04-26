@@ -12,22 +12,18 @@ def add_user(username):
 
 def add_group(chat_id):
     """Добавляет новую группу"""
-    group = Group.create(chat_id=chat_id)
-    return group
+    return Group.create(chat_id=chat_id)
 
 def add_group_members(group_id, user_id):
     """Добавляет нового участника группы"""
-    if get_group_member_id(group_id, user_id) != None:
-        raise Exception("Такой участник группы уже был добавлен")
-    group_member = GroupMember.create(group_id=group_id, user_id=user_id)
-    return group_member
+    return GroupMember.create(group_id=group_id, user_id=user_id)
 
 def add_depts(debtor_id, creditor_id, delta=0): 
     """Добавляет пару людей, """
-    if (debtor_id.id == creditor_id.id):
+    if (debtor_id == creditor_id):
         return None
-    if debtor_id.group_id != creditor_id.group_id:
-        raise Exception("Кредитор и должник должны быть в одной группе")
+    # if debtor_id.group_id != creditor_id.group_id:
+    #     raise Exception("Кредитор и должник должны быть в одной группе")
     debt = Debt.create(debtor_id=debtor_id, creditor_id=creditor_id, delta=delta)
     return debt
 
@@ -78,16 +74,28 @@ def get_debts_by_pair_of_members(member_id1: int, member_id2: int) -> list[Debt]
         return add_depts(member_id1, member_id2)
 
 def get_group_member_by_id(member_id : int) -> GroupMember:
-    return GroupMember.get_by_id(member_id)
+    try:
+        return GroupMember.get_by_id(member_id)
+    except Exception:
+        print("Не был найден участник группы")
+        return None
 
 def get_group_by_id(group_id : int) -> Group:
     return Group.get_by_id(group_id)
 
 def get_user_by_id(user_id : int) -> User:
-    return User.get_by_id(user_id)
+    try:
+        return User.get_by_id(user_id)
+    except Exception:
+        print("Не был найден юзер")
+        return None
+    
 
 def get_user_by_member_id(member_id : int) -> User:
-    return get_user_by_id(get_group_member_by_id(member_id).user_id)
+    member = get_group_member_by_id(member_id)
+    if member == None:
+        return None
+    return get_user_by_id(member.user_id)
 
 def make_dict_from_dept_list(debts : list, member_id : int, inverse : bool) -> dict[str, int]:
     result = dict()
