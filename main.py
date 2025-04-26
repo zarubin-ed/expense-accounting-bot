@@ -1,4 +1,4 @@
-from db import init_db 
+from db.init_db import init_db 
 
 def main() -> None :
     init_db()
