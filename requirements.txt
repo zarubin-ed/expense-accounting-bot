@@ -3,5 +3,4 @@ peewee
 python-telegram-bot
 pytest-cov
 pytest
-telegram
 coverage
