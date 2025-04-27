@@ -1,7 +1,8 @@
 from telegram import Update, MessageEntity
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
 from src.logic.services import *
 from telegram.error import BadRequest
+import telegram
 
 async def get_user_name_surname_by_id(user_id, update : Update, context: CallbackContext):
   chat_id = update.effective_chat.id
@@ -9,67 +10,68 @@ async def get_user_name_surname_by_id(user_id, update : Update, context: Callbac
   user = await context.bot.get_chat_member(chat_id, user_id).user
   return f"{user.first_name} {user.last_name}"
 
-async def get_id_by_nick(update, context, username):
-  username = username.lstrip("@")
-  member = await context.bot.get_chat_member(update.effective_chat.id, username)
-  user = member.user
-  return user.id
+async def get_user_id_by_username(update, context, username):
+    username = username.lstrip('@')
+    chat = await context.bot.get_chat('@' + username)
+    user_id = chat.id
+    return user_id
   
-def who_owes_me(update : Update, context: CallbackContext):
-  user_id = str(update.message.from_user.id)
+async def who_owes_me(update : Update, context: CallbackContext):
+  username = update.effective_user.username.lstrip("@")
   chat_id = str(update.effective_chat.id)
-  data = who_owes_this_user(user_id, chat_id)
+  data = who_owes_this_user(username, chat_id)
   answer = ""
   if not data or len(data) == 0:
     answer = "Тебе никто не должен :("
   else:
     answer = "Хорошо, вот список участников чата, которые тебе должны:"
-    for debtor_id, debt_sum in data:
+    for debtorname, debt_sum in data.items():
       try:
-        debtor = get_user_name_surname_by_id(debtor_id, update, context)
+        #debtor = await get_user_name_surname_by_id(debtor_id, update, context)
         answer += "\n"
-        answer += f"{debtor} должен {debt_sum} рублей"
+        answer += f"{debtorname} должен {debt_sum} рублей"
       except Exception as e:
         continue
   if (answer == "Хорошо, вот список участников чата, которые тебе должны:"):
     answer = "Извини, я не вижу твоих должников"
   await update.message.reply_text(answer)
   
-def whom_do_I_owe(update : Update, context: CallbackContext):
-  user_id = str(update.message.from_user.id)
+async def whom_do_I_owe(update : Update, context: CallbackContext):
+  username = update.effective_user.username.lstrip("@")
   chat_id = str(update.effective_chat.id)
-  data = whom_does_this_user_owe(user_id, chat_id)
+  data = whom_does_this_user_owe(username, chat_id)
   answer = ""
   if not data or len(data) == 0:
     answer = "У тебя нет долгов :)"
   else:
     answer = "Хорошо, вот список участников чата, которым ты должен:"
-    for creditor_id, debt_sum in data:
-      try:
-        creditor = get_user_name_surname_by_id(creditor_id, update, context)
-        answer += "\n"
-        answer += f"Пользователю {creditor} ты должен {debt_sum} рублей"
-      except Exception as e:
-        continue
+    for creditorname, debt_sum in data.items():
+      #try:
+      #creditor = await get_user_name_surname_by_id(creditor_id, update, context)
+      answer += "\n"
+      answer += f"Пользователю {creditorname} ты должен {debt_sum} рублей"
+      #except Exception as e:
+      #  continue
   if (answer == "Хорошо, вот список участников чата, которым ты должен:"):
     answer = "Извини, я не вижу, кому ты должен"
   await update.message.reply_text(answer)
 
-def check_if_username_in_chat(update, context, username):
+async def check_if_username_in_chat(update, context, username):
   chat_id = update.effective_chat.id
   username = username.lstrip("@")
   try:
-    await context.bot.send_message(
+    msg = await context.bot.send_message(
       chat_id = chat_id,
       text = f"Checking user @{username}",
-      entities = [MessageEntity(type=MessageEntity.MENTION, offset=16, length=len(username)+1)]
+      entities = [{"type" : "mention", "offset" : 8, "length" : len(username) + 1}]
       )
+    await msg.delete()
     return True
   except BadRequest:
     return False
   
-def my_owe(update : Update, context: CallbackContext):
-  user_id = str(update.message.from_user.id)
+async def my_owe(update : Update, context: CallbackContext):
+  username = update.effective_user.username.lstrip("@")
   chat_id = str(update.effective_chat.id)
   args = context.args
   answer = ""
@@ -82,13 +84,25 @@ def my_owe(update : Update, context: CallbackContext):
     await update.message.reply_text(answer)
     return
   creditorname = args[0].lstrip("@")
-  debtsum = safe_make_float(args[1])
-  creditor_id = safe_get_second_user_id(update, context, creditorname)
-  if debtsum != None and crteditor_id != None:
-    register_debt(user_id, creditor_id, chat_id, debtsum)
+  if not await check_if_username_in_chat(update, context, creditorname):
+    answer = "Извини, я не вижу этого пользователя"
+    await update.message.reply_text(answer)
+    return
+  debtsum = await safe_make_float(update, context, args[1])
+  if debtsum <= 0:
+    answer = "Сумма долга положительна!"
+    await update.message.reply_text(answer)
+    return
+  if username ==  creditorname:
+    answer = "Что? Ты не можешь одолжить денег самому себе!"
+    await update.message.reply_text(answer)
+    return
+  #creditor_id = await safe_get_second_user_id(update, context, creditorname)
+  if debtsum != None:# and creditor_id != None:
+    register_debt(username, creditorname, chat_id, debtsum)
 
-def free_owe(update : Update, context: CallbackContext):
-  user_id = str(update.message.from_user.id)
+async def free_owe(update : Update, context: CallbackContext):
+  username = update.effective_user.username.lstrip("@")
   chat_id = str(update.effective_chat.id)
   args = context.args
   answer = ""
@@ -101,26 +115,40 @@ def free_owe(update : Update, context: CallbackContext):
     await update.message.reply_text(answer)
     return
   debtorname = args[0].lstrip("@")
-  debtsum = safe_make_float(args[1])
-  debtor_id = safe_get_second_user_id(update, context, debtorname)
-  if debtsum != None and debtor_id != None:
-    register_debt_free(debtor_id, user_id, chat_id, debtsum) 
+  if username == debtorname:
+    answer = "Что? Ты не можешь простить долг сам себе!"
+    await update.message.reply_text(answer)
+    return
+  debtsum = await safe_make_float(update, context, args[1])
+  if debtsum == None:
+    return
+  if debtsum <= 0:
+    answer = "Сумма долга положительна!"
+    await update.message.reply_text(answer)
+    return
+  #debtor_id = await safe_get_second_user_id(update, context, debtorname)
+  if debtsum != None:# and debtor_id != None:
+    register_debt_free(debtorname, username, chat_id, debtsum) 
 
-def safe_get_second_user_id(update, context, username):
-  if not check_if_username_in_chat(update, context, username):
+async def who_are_my_parents(update, context, username):
+  answer = "У меня два отца, Егор и Денис. Мамы у меня нет :)"
+  await update.message.reply_text(answer)
+
+async def safe_get_second_user_id(update, context, username):
+  if not await check_if_username_in_chat(update, context, username):
     answer = "Упс, этого пользователя нет в чате. Попробуй проверить корректность ника!"
     await update.message.reply_text(answer)
     return
   user_id = ""
-  try:
-    user_id = str(get_id_by_nick(update, context, username))
-    return user_id
-  except Exception as e:
-    answer = "Извини, я не вижу этого пользователя"
-    await update.message.reply_text(answer)
-    return
+  #try:
+  user_id = str(await get_user_id_by_username(update, context, username))
+  return user_id
+  #except Exception as e:
+  #  answer = "Извини, я не вижу этого пользователя"
+  #  await update.message.reply_text(answer)
+  #  return
  
-def safe_make_float(update, context, debtsum):
+async def safe_make_float(update, context, debtsum):
   try:
     debtsum = float(debtsum)
     return debtsum
