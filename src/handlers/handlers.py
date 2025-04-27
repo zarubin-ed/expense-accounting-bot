@@ -1,6 +1,6 @@
 from telegram import Update, MessageEntity
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext
-from src.logic.services import *
+from logic.services import *
 from telegram.error import BadRequest
 import telegram
 

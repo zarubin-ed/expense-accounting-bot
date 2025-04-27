@@ -63,3 +63,17 @@ def test_add_user():
         us = ls.add_user(user)
         assert us == None
 
+def test_from_real_case1():
+    clear_database()
+    ls.register_debt(users[0], users[1], chats[0], 8)
+    ls.register_debt(users[0], users[1], chats[0], 6)
+    ls.register_debt_free(users[0], users[1], chats[0], 6)
+    ls.register_debt_free(users[0], users[1], chats[0], 100)
+
+    res = ls.whom_does_this_user_owe(users[0], chats[0])
+    
+    assert res == {}
+
+    res = ls.who_owes_this_user(users[0], chats[0])
+
+    assert res == {users[1] : float(100 - 8)}
