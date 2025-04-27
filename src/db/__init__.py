@@ -1,6 +1,6 @@
 import os
 from peewee import SqliteDatabase
-from models import proxy, User, Group, GroupMember, Debt
+from db.models import proxy, User, Group, GroupMember, Debt
 
 def __init__():
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))

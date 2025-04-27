@@ -1,4 +1,4 @@
-from models import User, Group, GroupMember, Debt
+from db.models import User, Group, GroupMember, Debt
 from peewee import IntegrityError
 
 def add_user(username):
@@ -146,12 +146,12 @@ def register_debt(debtor_username : str, creditor_username : str, chat_id : str,
     creditor_member_id = get_member_id(creditor_username, chat_id)
 
     debt = get_debts_by_pair_of_members(debtor_member_id, creditor_member_id)
-
-    if debt.debtor_id != debtor_member_id:
-        value = -value
-    
-    debt.delta += value
-    debt.save()
+    if debt != None:
+        if debt.debtor_id.id != debtor_member_id:
+            value = -value
+        
+        debt.delta += value
+        debt.save()
 
 def register_debt_free(debtor_username : str, creditor_username : str, chat_id : str, value : float):
     """
