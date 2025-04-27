@@ -1,6 +1,6 @@
 peewee
+python-telegram-bot
+
 pytest-cov
 pytest
 coverage
-requests
-requests-mock
