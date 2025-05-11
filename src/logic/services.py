@@ -169,12 +169,3 @@ def register_debt_free(debtor_username : str, creditor_username : str, chat_id :
     :rtype: void
     """
     register_debt(debtor_username, creditor_username, chat_id, -value)
-
-
-
-
-
-
-
-
-
