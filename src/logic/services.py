@@ -1,7 +1,7 @@
 from db.models import User, Group, GroupMember, Debt
 from peewee import IntegrityError
 
-def add_user(username):
+def add_user(username : str) -> User:
     """Добавляет нового пользователя"""
     try:
         user = User.create(username=username)
@@ -10,15 +10,15 @@ def add_user(username):
         return None
     return user
 
-def add_group(chat_id):
+def add_group(chat_id : str) -> Group:
     """Добавляет новую группу"""
     return Group.create(chat_id=chat_id)
 
-def add_group_members(group_id, user_id):
+def add_group_members(group_id : int, user_id : int) -> GroupMember:
     """Добавляет нового участника группы"""
     return GroupMember.create(group_id=group_id, user_id=user_id)
 
-def add_debts(debtor_id, creditor_id, delta=0): 
+def add_debts(debtor_id : int, creditor_id : int, delta=0) -> Debt: 
     """Добавляет пару людей, """
     if (debtor_id == creditor_id):
         return None
@@ -113,7 +113,7 @@ def whom_does_this_user_owe(username : str, chat_id : str) -> dict:
     """
     return get_owe_dict_impl(username, chat_id, False)
 
-def who_owes_this_user(username : str, chat_id : str):
+def who_owes_this_user(username : str, chat_id : str) -> dict(str , int):
     """
     who_owes_this_user
 
